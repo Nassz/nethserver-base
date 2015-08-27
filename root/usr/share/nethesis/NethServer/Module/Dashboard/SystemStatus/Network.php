@@ -75,6 +75,13 @@ class Network extends \Nethgui\Controller\AbstractController
         return $dns['NameServers'];
     }
 
+    private function readGW()
+    {
+        $gw = $this->getPlatform()->exec("/sbin/ip route | grep ^default | awk '{print $3}'")->getOutput();
+        return $gw;
+    }
+
+
     private function readHostname()
     {
         return $this->getPlatform()->getDatabase('configuration')->getType('SystemName');
@@ -89,6 +96,7 @@ class Network extends \Nethgui\Controller\AbstractController
     {
         $this->interfaces = $this->readInterfaces();
         $this->dns = $this->readDNS();
+        $this->gw = $this->readGW();
         $this->hostname = $this->readHostname();
         $this->domain = $this->readDomain();
     }
@@ -114,12 +122,11 @@ class Network extends \Nethgui\Controller\AbstractController
             $this->interfaces = $this->readInterfaces();
         }
         $ifaces = array();
-        $view['gateway'] = "-";
-        foreach ($this->interfaces as $i=>$props) {
-            if ( $this->interfaces[$i]['role'] == 'green') {
-                $view['gateway'] = $this->interfaces[$i]['gateway'];
-            }
+
+        if (!$this->gw) {
+            $this->gw = $this->readGW();
         }
+        $view['gateway'] = $this->gw;
         $view['interfaces'] = $this->interfaces;
     }
 }
